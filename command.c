@@ -16,6 +16,8 @@
  */
 
 #include "input/input_driver.h"
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -135,7 +137,7 @@ static bool command_get_arg(const char *tok,
             return false;
 
          if (arg)
-            *arg = argument + 1;
+            *arg = *argument == '\0' ? argument : argument + 1;
 
          if (index)
             *index = i;
@@ -987,6 +989,110 @@ bool command_load_savefiles(command_t *cmd, const char* arg)
    if (!ret)
      strlcpy(reply, "NO", sizeof(reply));
    cmd->replier(cmd, reply, _len);
+   return ret;
+}
+
+/* SET_CHEAT <index> <0|1>
+ *
+ * Unlike CHEAT_INDEX_PLUS/CHEAT_TOGGLE, this applies the requested state to
+ * the supplied entry directly. It neither relies on nor modifies the moving
+ * current-cheat cursor, preventing unrelated cheats from being changed. */
+bool command_set_cheat(command_t *cmd, const char *arg)
+{
+#ifdef HAVE_CHEATS
+   char *end = NULL;
+   unsigned long index;
+   unsigned long enabled;
+   bool ret = false;
+
+   if (!arg || !*arg)
+      goto end;
+
+   errno = 0;
+   index = strtoul(arg, &end, 10);
+   if (errno != 0 || end == arg || *end != ' ' || index > UINT_MAX)
+      goto end;
+
+   while (*end == ' ')
+      end++;
+   if (*end == '\0')
+      goto end;
+
+   errno = 0;
+   enabled = strtoul(end, &end, 10);
+   if (errno != 0 || (*end != '\0' && *end != ' ') || enabled > 1)
+      goto end;
+   while (*end == ' ')
+      end++;
+   if (*end != '\0')
+      goto end;
+
+   ret = cheat_manager_set_state((unsigned)index, enabled != 0);
+end:
+   cmd->replier(cmd, ret ? "OK\n" : "NO\n", 3);
+   return ret;
+#else
+   cmd->replier(cmd, "NO\n", 3);
+   return false;
+#endif
+}
+
+/* CHEAT_RESET
+ *
+ * Explicitly clears all cheat states in one operation. The next SET_CHEAT
+ * command may then enable the exact desired entry without cursor traversal. */
+bool command_cheat_reset(command_t *cmd, const char *arg)
+{
+#ifdef HAVE_CHEATS
+   bool ret = arg && !*arg && cheat_manager_reset();
+   cmd->replier(cmd, ret ? "OK\n" : "NO\n", 3);
+   return ret;
+#else
+   cmd->replier(cmd, "NO\n", 3);
+   return false;
+#endif
+}
+
+/* SET_CORE_OPTION <key> <value>
+ *
+ * Changes the active core-option manager. Setting its `updated` flag via
+ * core_option_manager_set_val() makes a running core observe the new value on
+ * its next RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE poll. */
+bool command_set_core_option(command_t *cmd, const char *arg)
+{
+   char *separator;
+   char *value;
+   size_t option_index;
+   size_t value_index;
+   bool ret = false;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+   if (!arg || !*arg || !runloop_st || !runloop_st->core_options)
+      goto end;
+
+   separator = strchr((char*)arg, ' ');
+   if (!separator)
+      goto end;
+   *separator = '\0';
+   value = separator + 1;
+   while (*value == ' ')
+      value++;
+   if (!*arg || !*value)
+      goto end;
+
+   if (!core_option_manager_get_idx(
+         runloop_st->core_options, arg, &option_index))
+      goto end;
+   if (!core_option_manager_get_val_idx(
+         runloop_st->core_options, option_index, value, &value_index))
+      goto end;
+
+   if (runloop_st->core_options->opts[option_index].index != value_index)
+      core_option_manager_set_val(
+            runloop_st->core_options, option_index, value_index, true);
+   ret = true;
+end:
+   cmd->replier(cmd, ret ? "OK\n" : "NO\n", 3);
    return ret;
 }
 

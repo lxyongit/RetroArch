@@ -457,6 +457,9 @@ bool command_unload_core(command_t *cmd, const char* arg);
 bool command_video_reinit(command_t *cmd, const char* arg);
 bool command_audio_reinit(command_t *cmd, const char* arg);
 bool command_drivers_reinit(command_t *cmd, const char* arg);
+bool command_set_cheat(command_t *cmd, const char *arg);
+bool command_cheat_reset(command_t *cmd, const char *arg);
+bool command_set_core_option(command_t *cmd, const char *arg);
 
 static const struct cmd_action_map action_map[] = {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -491,6 +494,9 @@ static const struct cmd_action_map action_map[] = {
    { "VIDEO_REINIT", command_video_reinit, "No argument"},
    { "AUDIO_REINIT", command_audio_reinit, "No argument"},
    { "DRIVERS_REINIT", command_drivers_reinit, "No argument"},
+   { "SET_CHEAT", command_set_cheat, "<index> <0|1>" },
+   { "CHEAT_RESET", command_cheat_reset, "No argument" },
+   { "SET_CORE_OPTION", command_set_core_option, "<key> <value>" },
 };
 
 static const struct cmd_map map[] = {

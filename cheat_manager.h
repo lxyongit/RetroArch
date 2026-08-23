@@ -229,6 +229,13 @@ void cheat_manager_toggle_index(bool apply_cheats_after_toggle,
       bool notification_show_cheats_applied,
       unsigned i);
 
+/* Set one cheat deterministically, without changing the current-cheat cursor.
+ * This is used by the local network command bridge. */
+bool cheat_manager_set_state(unsigned i, bool enabled);
+
+/* Disable every loaded cheat and restore the current-cheat cursor to zero. */
+bool cheat_manager_reset(void);
+
 unsigned cheat_manager_get_buf_size(void);
 
 const char *cheat_manager_get_desc(unsigned i);

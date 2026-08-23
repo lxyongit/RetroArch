@@ -735,6 +735,35 @@ void cheat_manager_toggle_index(
       cheat_manager_apply_cheats(notification_show_cheats_applied);
 }
 
+bool cheat_manager_set_state(unsigned i, bool enabled)
+{
+   cheat_manager_t *cheat_st = &cheat_manager_state;
+
+   if (!cheat_st->cheats || i >= cheat_st->size)
+      return false;
+
+   cheat_st->cheats[i].state = enabled;
+   /* The caller has already selected the exact entry. Do not emit an OSD
+    * notification for every state transition in a multi-option cheat. */
+   cheat_manager_apply_cheats(false);
+   return true;
+}
+
+bool cheat_manager_reset(void)
+{
+   unsigned i;
+   cheat_manager_t *cheat_st = &cheat_manager_state;
+
+   if (!cheat_st->cheats)
+      return false;
+
+   for (i = 0; i < cheat_st->size; i++)
+      cheat_st->cheats[i].state = false;
+   cheat_st->ptr = 0;
+   cheat_manager_apply_cheats(false);
+   return true;
+}
+
 void cheat_manager_toggle(bool notification_show_cheats_applied)
 {
    cheat_manager_t *cheat_st = &cheat_manager_state;
