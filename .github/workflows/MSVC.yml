@@ -2,6 +2,8 @@ name: CI Windows (MSVC)
 
 on:
   push:
+    tags:
+      - 'app-*'
   pull_request:
   repository_dispatch:
     types: [run_build]
@@ -55,4 +57,3 @@ jobs:
               pkg/msvc/${{matrix.platform}}/${{matrix.configuration}}/RetroArch-msvc${{matrix.version}}.exe
             ${{ matrix.version == 'UWP' }}:
               pkg/msvc-uwp/AppPackages/RetroArch-msvcUWP
-

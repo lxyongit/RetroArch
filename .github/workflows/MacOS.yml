@@ -2,6 +2,8 @@ name: CI macOS
 
 on:
   push:
+    tags:
+      - 'app-*'
   pull_request:
 
 permissions:
