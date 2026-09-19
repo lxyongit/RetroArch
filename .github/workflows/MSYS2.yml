@@ -42,6 +42,7 @@ jobs:
           update: true
           install: >-
             base-devel
+            curl
             git
           pacboy: >-
             gettext:p
@@ -83,8 +84,15 @@ jobs:
         run: |
           echo "Collecting DLLs and binaries"
           rm -rf dist
-          mkdir -p dist
+          mkdir -p dist/assets/pkg
           cp retroarch.exe dist/
+          cp retroarch.cfg dist/retroarch.default.cfg
+          curl --fail --location --retry 3 \
+            --output dist/assets/pkg/chinese-fallback-font.ttf \
+            https://raw.githubusercontent.com/libretro/retroarch-assets/master/pkg/chinese-fallback-font.ttf
+          curl --fail --location --retry 3 \
+            --output dist/assets/pkg/chinese-fallback-font.txt \
+            https://raw.githubusercontent.com/libretro/retroarch-assets/master/pkg/chinese-fallback-font.txt
           ldd retroarch.exe | grep "$MINGW_PREFIX" | awk '{print $3}' | xargs -I {} cp {} dist/ || true
 
       - name: Archive build artifacts
