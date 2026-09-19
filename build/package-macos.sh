@@ -4,6 +4,10 @@
 # Usage:
 #   bash build/package-macos.sh [configure options]
 #
+# Set MACOS_ARCH to force a target architecture supported by the Makefile
+# (for example x86_64). MACOS_OUTPUT_DIR may be used to keep cross-build
+# artifacts separate from the native build.
+#
 # The normal RetroArch build links against Homebrew libraries by absolute
 # install name. The upstream Xcode packaging step embeds the libraries it
 # needs, so this script does the same for the Makefile bundle target: collect
@@ -12,7 +16,10 @@
 set -euo pipefail
 
 source_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-output_dir="${source_dir}/build/macos"
+target_arch="${MACOS_ARCH:-}"
+configure_arch="${MACOS_CONFIGURE_ARCH:-}"
+deployment_target="${MACOS_DEPLOYMENT_TARGET:-}"
+output_dir="${MACOS_OUTPUT_DIR:-${source_dir}/build/macos}"
 bundle="${output_dir}/RetroArch.app"
 frameworks_dir="${bundle}/Contents/Frameworks"
 jobs="${JOBS:-$(sysctl -n hw.ncpu)}"
@@ -26,8 +33,15 @@ ffmpeg_prefix=""
 if command -v brew >/dev/null 2>&1; then
   ffmpeg_prefix="$(brew --prefix ffmpeg 2>/dev/null || true)"
 fi
-if [[ -z "${ffmpeg_prefix}" && -d /opt/homebrew/opt/ffmpeg ]]; then
-  ffmpeg_prefix="/opt/homebrew/opt/ffmpeg"
+if [[ -z "${ffmpeg_prefix}" ]]; then
+  case "${target_arch:-$(uname -m)}" in
+    arm64)
+      [[ -d /opt/homebrew/opt/ffmpeg ]] && ffmpeg_prefix="/opt/homebrew/opt/ffmpeg"
+      ;;
+    x86_64)
+      [[ -d /usr/local/opt/ffmpeg ]] && ffmpeg_prefix="/usr/local/opt/ffmpeg"
+      ;;
+  esac
 fi
 if [[ -n "${ffmpeg_prefix}" && -d "${ffmpeg_prefix}" ]]; then
   export PKG_CONFIG_PATH="${ffmpeg_prefix}/lib/pkgconfig${PKG_CONFIG_PATH:+:${PKG_CONFIG_PATH}}"
@@ -38,9 +52,20 @@ fi
 # configure changes feature flags, so old object/dependency files must not be
 # reused across configurations (especially when FFmpeg was just enabled or
 # disabled).
-make clean
-./configure "$@"
-make -j"${jobs}" bundle BUNDLE="${bundle}"
+/usr/bin/make clean
+if [[ -n "${configure_arch}" ]]; then
+  /usr/bin/arch -"${configure_arch}" /bin/sh ./configure "$@"
+else
+  ./configure "$@"
+fi
+make_options=(-j"${jobs}" "BUNDLE=${bundle}")
+if [[ -n "${target_arch}" ]]; then
+  make_options+=("ARCH=${target_arch}")
+fi
+if [[ -n "${deployment_target}" ]]; then
+  make_options+=("MINVERFLAGS=-mmacosx-version-min=${deployment_target}")
+fi
+/usr/bin/make "${make_options[@]}" bundle
 
 executable="${bundle}/Contents/MacOS/RetroArch"
 if [[ ! -f "${executable}" ]]; then
@@ -49,6 +74,19 @@ if [[ ! -f "${executable}" ]]; then
 fi
 
 mkdir -p "${frameworks_dir}"
+
+has_architecture() {
+  local binary="$1"
+  local architecture="$2"
+
+  lipo -archs "${binary}" 2>/dev/null | tr ' ' '\n' | grep -Fxq "${architecture}"
+}
+
+if [[ -n "${target_arch}" ]] && ! has_architecture "${executable}" "${target_arch}"; then
+  echo "打包失败：${executable} 不包含目标架构 ${target_arch}" >&2
+  lipo -info "${executable}" >&2 || true
+  exit 1
+fi
 
 is_bundled_dependency() {
   case "$1" in
@@ -86,6 +124,13 @@ bundle_macho_dependencies() {
     if [[ ! -f "${dependency}" ]]; then
       echo "找不到构建依赖：${dependency}" >&2
       echo "请先安装对应的 Homebrew 运行库，或关闭该功能后再打包。" >&2
+      exit 1
+    fi
+
+    if [[ -n "${target_arch}" ]] && ! has_architecture "${dependency}" "${target_arch}"; then
+      echo "依赖架构不匹配：${dependency}" >&2
+      echo "需要 ${target_arch} 版本的 Homebrew 运行库。" >&2
+      lipo -info "${dependency}" >&2 || true
       exit 1
     fi
 

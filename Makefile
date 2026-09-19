@@ -244,7 +244,10 @@ METAL_AIR_FILES  := $(METAL_SHADER_SRCS:.metal=.air)
 
 %.air: %.metal
 	@$(if $(Q), $(shell echo echo METAL $<),)
-	$(Q)xcrun -sdk macosx metal $(ARCHFLAGS) -c $< -o $@
+	# Metal AIR is GPU bytecode, so the application's CPU architecture must not
+	# be forwarded here. Forcing x86_64 makes current Metal toolchains crash
+	# when cross-building on Apple Silicon.
+	$(Q)xcrun -sdk macosx metal -c $< -o $@
 
 default.metallib: $(METAL_AIR_FILES)
 	@$(if $(Q), $(shell echo echo METALLIB $@),)

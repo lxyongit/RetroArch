@@ -302,3 +302,7 @@ pkg/psl1ght/pkg/USRDIR/shaders_cg/
 !pkg/psl1ght/pkg/USRDIR/system/
 /RetroArch.app
 /build
+!/build/
+/build/*
+!/build/package-macos-intel.sh
+!/build/package-windows-x64.bat
