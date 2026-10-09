@@ -65,6 +65,7 @@
 #include "../../verbosity.h"
 
 #include "ui_cocoa.h"
+#import "cocoa/RetroArchGameTools.h"
 
 #ifdef HAVE_SWIFT
 #import "RetroArch-Swift.h"
@@ -1166,6 +1167,30 @@ static void open_document_handler(
 - (void)unloadingCore { }
 - (IBAction)showPreferences:(id)sender { }
 
+- (IBAction)showCheatManager:(id)sender
+{
+   [RetroArchGameTools showCheats];
+}
+
+- (IBAction)showSaveManager:(id)sender
+{
+   [RetroArchGameTools showSaves];
+}
+
+- (void)menuWillOpen:(NSMenu *)menu
+{
+   NSMenuItem *item = [menu itemAtIndex:0];
+   SEL action      = [item action];
+
+   if (action == @selector(showCheatManager:) ||
+       action == @selector(showSaveManager:))
+   {
+      /* Finish menu tracking before bringing the manager window forward. */
+      [menu cancelTracking];
+      [self performSelector:action withObject:item afterDelay:0];
+   }
+}
+
 - (IBAction)showCoresDirectory:(id)sender
 {
    settings_t          *settings = config_get_ptr();
@@ -1252,6 +1277,23 @@ static NSMenuItem *cocoa_menu_item_with_action(NSString *title,
    if (tag)
       [item setTag:tag];
    RARCH_AUTORELEASE(item);
+   return item;
+}
+
+static NSMenuItem *cocoa_game_tools_menu_item(NSString *title,
+      SEL action, id delegate)
+{
+   NSMenuItem *item = cocoa_menu_item_with_action(title, nil,
+         @"", 0, nil, 0);
+   NSMenu *menu = [[NSMenu alloc] initWithTitle:title];
+
+   /* AppKit menu bar entries own submenus. Open the manager when this
+    * submenu starts tracking, without requiring another menu selection. */
+   [menu addItem:cocoa_menu_item_with_action(title,
+         action, @"", 0, delegate, 0)];
+   [menu setDelegate:delegate];
+   [item setSubmenu:menu];
+   RARCH_RELEASE(menu);
    return item;
 }
 
@@ -1479,6 +1521,12 @@ static void cocoa_create_menu_bar(id delegate)
    [item setSubmenu:cocoa_create_command_menu(delegate)];
    [menubar addItem:item];
    RARCH_RELEASE(item);
+
+   /* Game tools sit beside Command and open their windows directly. */
+   [menubar addItem:cocoa_game_tools_menu_item(@"金手指",
+         @selector(showCheatManager:), delegate)];
+   [menubar addItem:cocoa_game_tools_menu_item(@"存档管理",
+         @selector(showSaveManager:), delegate)];
 
    /* Paths menu */
    item = [[NSMenuItem alloc] init];

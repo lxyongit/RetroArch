@@ -125,7 +125,9 @@ enum
    ID_M_STATE_INDEX_9,
    ID_M_TAKE_SCREENSHOT,
    ID_M_MUTE_TOGGLE,
-   ID_M_TOGGLE_DESKTOP
+   ID_M_TOGGLE_DESKTOP,
+   ID_M_CHEAT_MANAGER,
+   ID_M_SAVE_MANAGER
 };
 
 /* Functions moved from gfx/common/win32_common.c —

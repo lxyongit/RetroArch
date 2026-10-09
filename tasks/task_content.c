@@ -89,6 +89,7 @@
 #endif
 
 #include "task_content.h"
+#include "../ui/desktop_game_tools.h"
 #include "patch_stream.h"
 #include "tasks_internal.h"
 #include "task_content_prefetch.h"
@@ -1574,6 +1575,9 @@ static bool content_file_load(
    load_info.special = special;
    load_info.info    = p_content->content_list->game_info;
 
+#ifdef HAVE_DESKTOP_GAME_TOOLS
+   desktop_game_tools_prepare_content(path_get(RARCH_PATH_CONTENT));
+#endif
    if (!core_load_game(&load_info))
    {
       /* This is probably going to fail on multifile ROMs etc.

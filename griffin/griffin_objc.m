@@ -47,6 +47,7 @@
 #endif
 
 #if defined(OSX)
+#include "../ui/drivers/cocoa/RetroArchGameTools.m"
 #include "../ui/drivers/ui_cocoa.m"
 #else
 #include "../ui/drivers/ui_cocoatouch.m"

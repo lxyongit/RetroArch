@@ -278,6 +278,10 @@ CHEATS
 /*============================================================
 UI COMMON CONTEXT
 ============================================================ */
+#include "../ui/desktop_game_tools.h"
+#ifdef HAVE_DESKTOP_GAME_TOOLS
+#include "../ui/desktop_game_tools.c"
+#endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../gfx/common/win32_common.c"
 #endif
@@ -1292,6 +1296,7 @@ FRONTEND
 UI
 ============================================================ */
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#include "../ui/drivers/win32_game_tools.c"
 #include "../ui/drivers/ui_win32.c"
 #endif
 

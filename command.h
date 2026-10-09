@@ -349,6 +349,7 @@ struct rarch_state;
  * Returns: true (1) on success, otherwise false (0).
  **/
 bool command_event(enum event_command action, void *data);
+bool command_event_load_state_path(const char *path);
 
 /* Constructors for the supported drivers */
 #ifdef HAVE_NETWORK_CMD

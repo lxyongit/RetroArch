@@ -62,6 +62,7 @@
 #include "../../frontend/drivers/platform_win32.h"
 
 #include "ui_win32.h"
+#include "win32_game_tools.h"
 
 #include "../../core_info.h"
 #include "../../tasks/task_content.h"
@@ -90,7 +91,10 @@ static void ui_application_win32_process_events(void)
    MSG msg;
    while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
    {
-      bool translated_accelerator = main_window.hwnd == msg.hwnd && TranslateAccelerator(msg.hwnd, window_accelerators, &msg) != 0;
+      bool translated_accelerator;
+      if (win32_game_tools_process_message(&msg))
+         continue;
+      translated_accelerator = main_window.hwnd == msg.hwnd && TranslateAccelerator(msg.hwnd, window_accelerators, &msg) != 0;
 
       if (!translated_accelerator)
       {
@@ -979,6 +983,12 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
       case ID_M_SAVE_STATE:
          command_event(CMD_EVENT_SAVE_STATE, NULL);
          break;
+      case ID_M_CHEAT_MANAGER:
+         win32_game_tools_show(owner, false);
+         break;
+      case ID_M_SAVE_MANAGER:
+         win32_game_tools_show(owner, true);
+         break;
       case ID_M_DISK_CYCLE:
          command_event(CMD_EVENT_DISK_EJECT_TOGGLE, NULL);
          break;
@@ -1405,6 +1415,10 @@ HMENU win32_resources_create_menu(void)
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE));
    AppendMenuA(menu_bar, MF_POPUP, (UINT_PTR)command_menu, "Command");
 
+   /* Game tools sit beside Command and open their windows directly. */
+   AppendMenuW(menu_bar, MF_STRING, ID_M_CHEAT_MANAGER, L"\u91d1\u624b\u6307");
+   AppendMenuW(menu_bar, MF_STRING, ID_M_SAVE_MANAGER, L"\u5b58\u6863\u7ba1\u7406");
+
    /* ---- Window ---- */
    window_menu = CreatePopupMenu();
 
@@ -1567,7 +1581,10 @@ int win32_resources_pick_core_dialog(HWND parent, DLGPROC dlg_proc)
 }
 #endif /* !__WINRT__ */
 
-static void ui_companion_win32_deinit(void *data) { }
+static void ui_companion_win32_deinit(void *data)
+{
+   win32_game_tools_destroy();
+}
 static void *ui_companion_win32_init(void) { return (void*)-1; }
 static void ui_companion_win32_toggle(void *data, bool force) { }
 static void ui_companion_win32_event_command(

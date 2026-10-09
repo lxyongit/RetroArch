@@ -73,6 +73,8 @@
 
 #define CMD_BUF_SIZE 4096
 
+#include "ui/desktop_game_tools.h"
+
 static void command_post_state_loaded(void)
 {
 #ifdef HAVE_CHEEVOS
@@ -100,6 +102,14 @@ static void command_post_state_loaded(void)
       gfx_widget_state_slot_show(dispwidget_get_ptr(), NULL, NULL);
    }
 #endif
+}
+
+bool command_event_load_state_path(const char *path)
+{
+   if (!content_load_state(path, false, false))
+      return false;
+   command_post_state_loaded();
+   return true;
 }
 
 #if defined(HAVE_COMMAND)
@@ -1862,6 +1872,10 @@ void command_event_init_cheats(
 
    cheat_manager_alloc_if_empty();
    cheat_manager_load_game_specific_cheats(path_cheat_db);
+
+#ifdef HAVE_DESKTOP_GAME_TOOLS
+   desktop_game_tools_init_cheats();
+#endif
 
    if (apply_cheats_after_load)
       cheat_manager_apply_cheats(

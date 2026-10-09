@@ -1470,7 +1470,8 @@ endif
 # Companion UI
 
 ifneq ($(findstring Win32,$(OS)),)
-   OBJ += ui/drivers/ui_win32.o
+   OBJ += ui/drivers/ui_win32.o ui/desktop_game_tools.o \
+          ui/drivers/win32_game_tools.o
 endif
 
 # Video
@@ -2745,7 +2746,9 @@ ifeq ($(HAVE_COCOA_COMMON),1)
    DEFINES += -DHAVE_MAIN -DOSX -DHAVE_COCOA
    OBJ += input/drivers/cocoa_input.o \
           ui/drivers/ui_cocoa.o \
-          ui/drivers/cocoa/cocoa_common.o
+          ui/drivers/cocoa/cocoa_common.o \
+          ui/desktop_game_tools.o \
+          ui/drivers/cocoa/RetroArchGameTools.o
    # RetroArchPlaylistManager uses Obj-C lightweight generics and
    # nullability macros (Xcode 7+, 2015).  It's fine on iOS/tvOS and
    # modern macOS (10.11+), but GCC 4.0 / old clang on pre-10.11
